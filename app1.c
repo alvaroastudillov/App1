@@ -28,9 +28,9 @@ int parse_csv_line(char *line, char tokens[][256]) {
     return token_index;
 }
 
-/* ------------------- Función de Métrica: pms ------------------- */
-// Calcula la Pizza Más Vendida (pms) agrupando por pizza_name y sumando la cantidad
-// Firma: char *pms(int *size, Order *orders);
+/* ------------------- Funciones de Métricas ------------------- */
+
+// pms: Pizza más vendida (ya implementada previamente)
 char *pms(int *size, Order *orders) {
     typedef struct {
         char name[128];
@@ -72,6 +72,94 @@ char *pms(int *size, Order *orders) {
     return result;
 }
 
+// pls: Pizza menos vendida
+char *pls(int *size, Order *orders) {
+    typedef struct {
+        char name[128];
+        int total;
+    } PizzaCount;
+    int capacity = 10, countSize = 0;
+    PizzaCount *counts = malloc(capacity * sizeof(PizzaCount));
+
+    for (int i = 0; i < *size; i++) {
+        int found = 0;
+        for (int j = 0; j < countSize; j++) {
+            if (strcmp(counts[j].name, orders[i].pizza_name) == 0) {
+                counts[j].total += orders[i].quantity;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            if (countSize >= capacity) {
+                capacity *= 2;
+                counts = realloc(counts, capacity * sizeof(PizzaCount));
+            }
+            strcpy(counts[countSize].name, orders[i].pizza_name);
+            counts[countSize].total = orders[i].quantity;
+            countSize++;
+        }
+    }
+    int min = (countSize > 0) ? counts[0].total : 0;
+    char worst[128] = "";
+    if (countSize > 0)
+        strcpy(worst, counts[0].name);
+    for (int j = 0; j < countSize; j++) {
+        if (counts[j].total < min) {
+            min = counts[j].total;
+            strcpy(worst, counts[j].name);
+        }
+    }
+    free(counts);
+    char *result = malloc(256);
+    snprintf(result, 256, "%s", worst);
+    return result;
+}
+
+// dms: Fecha con mayor ventas en términos de dinero
+char *dms(int *size, Order *orders) {
+    typedef struct {
+        char date[32];
+        double total;
+    } DateSales;
+    int capacity = 10, countSize = 0;
+    DateSales *sales = malloc(capacity * sizeof(DateSales));
+
+    for (int i = 0; i < *size; i++) {
+        int found = 0;
+        for (int j = 0; j < countSize; j++) {
+            if (strcmp(sales[j].date, orders[i].order_date) == 0) {
+                sales[j].total += orders[i].total_price;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            if (countSize >= capacity) {
+                capacity *= 2;
+                sales = realloc(sales, capacity * sizeof(DateSales));
+            }
+            strcpy(sales[countSize].date, orders[i].order_date);
+            sales[countSize].total = orders[i].total_price;
+            countSize++;
+        }
+    }
+    double max = -1.0;
+    char best_date[32] = "";
+    double best_total = 0;
+    for (int j = 0; j < countSize; j++) {
+        if (sales[j].total > max) {
+            max = sales[j].total;
+            strcpy(best_date, sales[j].date);
+            best_total = sales[j].total;
+        }
+    }
+    free(sales);
+    char *result = malloc(256);
+    snprintf(result, 256, "%s: %.2f", best_date, best_total);
+    return result;
+}
+
 /* ------------------- Arreglo de punteros a funciones para las métricas ------------------- */
 typedef char* (*MetricFunc)(int *, Order *);
 
@@ -81,9 +169,11 @@ typedef struct {
     MetricFunc func;
 } MetricEntry;
 
-// Por ahora se implementa solo la métrica pms.
+// Actualizamos el arreglo de métricas con las nuevas funciones
 MetricEntry metrics[] = {
-    {"pms", "Pizza mas vendida", pms}
+    {"pms", "Pizza mas vendida", pms},
+    {"pls", "Pizza menos vendida", pls},
+    {"dms", "Fecha con mas ventas en terminos de dinero", dms}
 };
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
@@ -103,15 +193,13 @@ int main(int argc, char *argv[]) {
     }
 
     char line[MAX_LINE];
-    
-    // Leer e ignorar la cabecera
     if (fgets(line, MAX_LINE, fp) == NULL) {
-        fprintf(stderr, "Archivo vacío o error al leer\n");
+        fprintf(stderr, "Archivo vacio o error al leer\n");
         fclose(fp);
         return 1;
     }
 
-    // Arreglo de órdenes (usamos un arreglo dinámico para permitir crecer)
+    // Arreglo dinámico de órdenes
     int capacity = 100;
     int num_orders = 0;
     Order *orders = malloc(capacity * sizeof(Order));
@@ -124,8 +212,7 @@ int main(int argc, char *argv[]) {
         char tokens[MAX_TOKENS][256] = {{0}};
         int token_count = parse_csv_line(line, tokens);
         if (token_count < MAX_TOKENS)
-            continue; // Si la línea no tiene los 12 campos, se ignora
-
+            continue;
         if (num_orders >= capacity) {
             capacity *= 2;
             orders = realloc(orders, capacity * sizeof(Order));
@@ -145,7 +232,7 @@ int main(int argc, char *argv[]) {
     }
     fclose(fp);
 
-    // Si se especifican métricas como argumentos, procesarlas.
+    // Procesar las métricas especificadas como argumentos
     if (argc > 2) {
         for (int i = 2; i < argc; i++) {
             int found = 0;
@@ -163,7 +250,7 @@ int main(int argc, char *argv[]) {
             }
         }
     } else {
-        printf("No se especificaron métricas. Se cargaron %d órdenes.\n", num_orders);
+        printf("No se especificaron metricas. Se cargaron %d ordenes.\n", num_orders);
     }
 
     free(orders);
