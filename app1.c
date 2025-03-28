@@ -303,6 +303,25 @@ char *dlsp(int *size, Order *orders) {
     return result;
 }
 
+//apo: Promedio de pizzas por orden
+char *apo(int *size, Order *orders) { //char porque MetricFunc devuelve char
+    double total_pizzas = 0;
+    for (int i = 0; i < *size; i++) { //cant total de pizzas vendidas
+        total_pizzas += orders[i].quantity;
+    }
+
+    if (*size == 0) {
+        char *result = malloc(256);
+        snprintf(result, 256, "0.00");
+        return result; //devolvemos 0.00 si no hay ordenes, para evitar division por 0
+    }
+
+    double average = total_pizzas / (*size); //promedio de pizzas por orden
+    char *result = malloc(256);
+    snprintf(result, 256, "%.2f", average); //guardamos el resultado como char
+    return result; //devolvemos el resultado
+}
+
 /* ------------------- Arreglo de punteros a funciones para las métricas ------------------- */
 typedef char* (*MetricFunc)(int *, Order *);
 
@@ -319,14 +338,14 @@ MetricEntry metrics[] = {
     {"dms", "Fecha con mas ventas en terminos de dinero", dms},
     {"dls", "Fecha con menos ventas en terminos de dinero", dls},
     {"dmsp", "Fecha con mas ventas en terminos de cantidad de pizzas", dmsp},
-    {"dlsp", "Fecha con menos ventas en terminos de cantidad de pizzas", dlsp}
+    {"dlsp", "Fecha con menos ventas en terminos de cantidad de pizzas", dlsp},
+    {"apo", "Promedio de pizzas por orden", apo}
 };
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
 
 
 /* Metricas que faltan: 
-    dlsp: Fecha con menos ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
     apo: Promedio de pizzas por orden
     apd: Promedio de pizzas por día
     ims: Ingrediente más vendido
