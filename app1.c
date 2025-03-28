@@ -322,6 +322,54 @@ char *apo(int *size, Order *orders) { //char porque MetricFunc devuelve char
     return result; //devolvemos el resultado
 }
 
+//apd: Promedio de pizzas por día
+char *apd(int *size, Order *order) {
+    typedef struct {
+        char date[32];
+        int total_pizzas;
+    } DaySales;
+
+    int capacity = 10, countSize = 0;
+    DaySales *sales = malloc(capacity * sizeof(DaySales));
+
+    for (int i = 0; i < *size; i++) {
+        int found = 0;
+        for (int j = 0; j < countSize; j++) {
+            if (strcmp(sales[j].date, order[i].order_date) == 0) {
+                sales[j].total_pizzas += order[i].quantity;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            if (countSize >= capacity) {
+                capacity *= 2;
+                sales = realloc(sales, capacity * sizeof(DaySales));
+            }
+            strcpy(sales[countSize].date, order[i].order_date);
+            sales[countSize].total_pizzas = order[i].quantity;
+            countSize++;
+        }
+    }
+
+    double total_pizzas = 0;
+    double total_days = 0;
+    for (int i = 0; i < countSize; i++) {
+        total_pizzas += sales[i].total_pizzas;
+        total_days++;
+    }
+
+    double average_per_day;
+    if (total_days > 0) {
+        average_per_day = total_pizzas / total_days;
+    }
+    
+    char *result = malloc(256);
+    snprintf(result, 256, "%.2f", average_per_day);
+    free(sales);
+    return result;
+}
+
 /* ------------------- Arreglo de punteros a funciones para las métricas ------------------- */
 typedef char* (*MetricFunc)(int *, Order *);
 
@@ -339,15 +387,14 @@ MetricEntry metrics[] = {
     {"dls", "Fecha con menos ventas en terminos de dinero", dls},
     {"dmsp", "Fecha con mas ventas en terminos de cantidad de pizzas", dmsp},
     {"dlsp", "Fecha con menos ventas en terminos de cantidad de pizzas", dlsp},
-    {"apo", "Promedio de pizzas por orden", apo}
+    {"apo", "Promedio de pizzas por orden", apo},
+    {"apd", "Promedio de pizzas por dia", apd}
 };
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
 
 
 /* Metricas que faltan: 
-    apo: Promedio de pizzas por orden
-    apd: Promedio de pizzas por día
     ims: Ingrediente más vendido
     hp: Cantidad de pizzas por categoría vendidas
     */
