@@ -211,6 +211,50 @@ char *dls(int *size, Order *orders){
     return result;
 }
 
+//dmsp: Fecha con más ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
+char *dmsp(int *size, Order *orders) {
+    typedef struct {
+        char date[32];
+        int total;
+    } DateCount;
+    int capacity = 10, countSize = 0;
+    DateCount *counts = malloc(capacity * sizeof(DateCount));
+
+    for (int i = 0; i < *size; i++) {
+        int found = 0;
+        for (int j = 0; j < countSize; j++) {
+            if (strcmp(counts[j].date, orders[i].order_date) == 0) {
+                counts[j].total += orders[i].quantity;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            if (countSize >= capacity) {
+                capacity *= 2;
+                counts = realloc(counts, capacity * sizeof(DateCount));
+            }
+            strcpy(counts[countSize].date, orders[i].order_date);
+            counts[countSize].total = orders[i].quantity;
+            countSize++;
+        }
+    }
+    int max = -1;
+    char best_date[32] = "";
+    int best_total = 0;
+    for (int j = 0; j < countSize; j++) {
+        if (counts[j].total > max) {
+            max = counts[j].total;
+            strcpy(best_date, counts[j].date);
+            best_total = counts[j].total;
+        }
+    }
+    free(counts);
+    char *result = malloc(256);
+    snprintf(result, 256, "%s: %d", best_date, best_total);
+    return result;
+}
+
 
 /* ------------------- Arreglo de punteros a funciones para las métricas ------------------- */
 typedef char* (*MetricFunc)(int *, Order *);
@@ -226,7 +270,8 @@ MetricEntry metrics[] = {
     {"pms", "Pizza mas vendida", pms},
     {"pls", "Pizza menos vendida", pls},
     {"dms", "Fecha con mas ventas en terminos de dinero", dms},
-    {"dls", "Fecha con menos ventas en terminos de dinero", dls}
+    {"dls", "Fecha con menos ventas en terminos de dinero", dls},
+    {"dmsp", "Fecha con mas ventas en terminos de cantidad de pizzas", dmsp},
 };
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
