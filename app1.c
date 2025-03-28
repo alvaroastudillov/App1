@@ -160,13 +160,13 @@ char *dms(int *size, Order *orders) {
     return result;
 }
 
+//dls: Fecha con menos ventas en términos de dinero (junto a la cantidad de dinero recaudado)
 char *dls(int *size, Order *orders){
     typedef struct {
         char date[32];
         double total;
     } DateSales;
     
-
     int capacity = 10, countSize = 0;
     DateSales *sales = malloc(capacity * sizeof(DateSales));
 
@@ -211,6 +211,7 @@ char *dls(int *size, Order *orders){
     return result;
 }
 
+
 /* ------------------- Arreglo de punteros a funciones para las métricas ------------------- */
 typedef char* (*MetricFunc)(int *, Order *);
 
@@ -224,14 +225,14 @@ typedef struct {
 MetricEntry metrics[] = {
     {"pms", "Pizza mas vendida", pms},
     {"pls", "Pizza menos vendida", pls},
-    {"dms", "Fecha con mas ventas en terminos de dinero", dms}
+    {"dms", "Fecha con mas ventas en terminos de dinero", dms},
+    {"dls", "Fecha con menos ventas en terminos de dinero", dls}
 };
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
 
 
 /* Metricas que faltan: 
-    dls: Fecha con menos ventas en términos de dinero (junto a la cantidad de dinero recaudado)
     dmsp: Fecha con más ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
     dlsp: Fecha con menos ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
     apo: Promedio de pizzas por orden
