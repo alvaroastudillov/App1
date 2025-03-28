@@ -255,6 +255,53 @@ char *dmsp(int *size, Order *orders) {
     return result;
 }
 
+//dlsp: Fecha con menos ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
+char *dlsp(int *size, Order *orders) {
+    typedef struct {
+        char date[32];
+        int total;
+    } DateCount;
+    int capacity = 10, countSize = 0;
+    DateCount *counts = malloc(capacity * sizeof(DateCount));
+
+    for (int i = 0; i < *size; i++) {
+        int found = 0;
+        for (int j = 0; j < countSize; j++) {
+            if (strcmp(counts[j].date, orders[i].order_date) == 0) {
+                counts[j].total += orders[i].quantity;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            if (countSize >= capacity) {
+                capacity *= 2;
+                counts = realloc(counts, capacity * sizeof(DateCount));
+            }
+            strcpy(counts[countSize].date, orders[i].order_date);
+            counts[countSize].total = orders[i].quantity;
+            countSize++;
+        }
+    }
+    int min = (countSize > 0) ? counts[0].total : 0;
+    char worst_date[32] = "";
+    int worst_total = 0;
+    if (countSize > 0) {
+        strcpy(worst_date, counts[0].date);
+        worst_total = counts[0].total;
+    }
+    for (int j = 0; j < countSize; j++) {
+        if (counts[j].total < min) {
+            min = counts[j].total;
+            strcpy(worst_date, counts[j].date);
+            worst_total = counts[j].total;
+        }
+    }
+    free(counts);
+    char *result = malloc(256);
+    snprintf(result, 256, "%s: %d", worst_date, worst_total);
+    return result;
+}
 
 /* ------------------- Arreglo de punteros a funciones para las métricas ------------------- */
 typedef char* (*MetricFunc)(int *, Order *);
@@ -272,13 +319,13 @@ MetricEntry metrics[] = {
     {"dms", "Fecha con mas ventas en terminos de dinero", dms},
     {"dls", "Fecha con menos ventas en terminos de dinero", dls},
     {"dmsp", "Fecha con mas ventas en terminos de cantidad de pizzas", dmsp},
+    {"dlsp", "Fecha con menos ventas en terminos de cantidad de pizzas", dlsp}
 };
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
 
 
 /* Metricas que faltan: 
-    dmsp: Fecha con más ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
     dlsp: Fecha con menos ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
     apo: Promedio de pizzas por orden
     apd: Promedio de pizzas por día
