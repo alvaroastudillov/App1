@@ -178,6 +178,18 @@ MetricEntry metrics[] = {
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
 
+
+/* Metricas que faltan: 
+    dls: Fecha con menos ventas en términos de dinero (junto a la cantidad de dinero recaudado)
+    dmsp: Fecha con más ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
+    dlsp: Fecha con menos ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
+    apo: Promedio de pizzas por orden
+    apd: Promedio de pizzas por día
+    ims: Ingrediente más vendido
+    hp: Cantidad de pizzas por categoría vendidas
+    */
+
+    
 /* ------------------- Función main ------------------- */
 int main(int argc, char *argv[]) {
     if (argc < 2) {
