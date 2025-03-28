@@ -160,6 +160,57 @@ char *dms(int *size, Order *orders) {
     return result;
 }
 
+char *dls(int *size, Order *orders){
+    typedef struct {
+        char date[32];
+        double total;
+    } DateSales;
+    
+
+    int capacity = 10, countSize = 0;
+    DateSales *sales = malloc(capacity * sizeof(DateSales));
+
+    for (int i = 0; i < *size; i++) {
+        int found = 0;
+        for (int j = 0; j < countSize; j++) {
+            if (strcmp(sales[j].date, orders[i].order_date) == 0) {
+                sales[j].total += orders[i].total_price;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) { //La fecha no se encontro en el arreglo sales[]
+            if (countSize >= capacity) { //si el arreglo esta lleno, lo expandimos
+                capacity *= 2; //duplicamos el tamaño de la capacidad
+                sales = realloc(sales, capacity * sizeof(DateSales)); //para reservar mas memoria
+            }
+            strcpy(sales[countSize].date, orders[i].order_date); //
+            sales[countSize].total = orders[i].total_price;
+            countSize++;
+        }
+    }
+
+    double min = (countSize > 0) ? sales[0].total : 0;
+    char worst_date[32] = "";
+    double worst_total = 0; //cantidad de ventas en la fecha de menor ventas
+    if (countSize > 0) {
+        strcpy(worst_date, sales[0].date);
+        worst_total = sales[0].total;
+    }
+    for (int j = 0; j < countSize; j++) { //guarda la fecha con menos ventas
+        if (sales[j].total < min) {
+            min = sales[j].total;
+            strcpy(worst_date, sales[j].date);
+            worst_total = sales[j].total;
+        }
+    }
+
+    free(sales); //liberamos la memoria, para no tener perdidas de memoria
+    char *result = malloc(256); //reservamos memoria para el resultado
+    snprintf(result, 256, "%s: %.2f", worst_date, worst_total); //guardamos el resultado en el formato que describamos
+    return result;
+}
+
 /* ------------------- Arreglo de punteros a funciones para las métricas ------------------- */
 typedef char* (*MetricFunc)(int *, Order *);
 
@@ -189,7 +240,7 @@ int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
     hp: Cantidad de pizzas por categoría vendidas
     */
 
-    
+
 /* ------------------- Función main ------------------- */
 int main(int argc, char *argv[]) {
     if (argc < 2) {
