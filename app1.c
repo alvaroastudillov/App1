@@ -30,7 +30,7 @@ int parse_csv_line(char *line, char tokens[][256]) {
 
 /* ------------------- Funciones de Métricas ------------------- */
 
-// pms: Pizza más vendida (ya implementada previamente)
+// pms: Pizza más vendida
 char *pms(int *size, Order *orders) {
     typedef struct {
         char name[128];
@@ -102,7 +102,7 @@ char *pls(int *size, Order *orders) {
     }
     int min = (countSize > 0) ? counts[0].total : 0;
     char worst[128] = "";
-    if (countSize > 0)
+    if(countSize > 0)
         strcpy(worst, counts[0].name);
     for (int j = 0; j < countSize; j++) {
         if (counts[j].total < min) {
@@ -160,13 +160,12 @@ char *dms(int *size, Order *orders) {
     return result;
 }
 
-//dls: Fecha con menos ventas en términos de dinero (junto a la cantidad de dinero recaudado)
-char *dls(int *size, Order *orders){
+// dls: Fecha con menor ventas en términos de dinero
+char *dls(int *size, Order *orders) {
     typedef struct {
         char date[32];
         double total;
     } DateSales;
-    
     int capacity = 10, countSize = 0;
     DateSales *sales = malloc(capacity * sizeof(DateSales));
 
@@ -179,52 +178,46 @@ char *dls(int *size, Order *orders){
                 break;
             }
         }
-        if (!found) { //La fecha no se encontro en el arreglo sales[]
-            if (countSize >= capacity) { //si el arreglo esta lleno, lo expandimos
-                capacity *= 2; //duplicamos el tamaño de la capacidad
-                sales = realloc(sales, capacity * sizeof(DateSales)); //para reservar mas memoria
+        if (!found) {
+            if (countSize >= capacity) {
+                capacity *= 2;
+                sales = realloc(sales, capacity * sizeof(DateSales));
             }
-            strcpy(sales[countSize].date, orders[i].order_date); //
+            strcpy(sales[countSize].date, orders[i].order_date);
             sales[countSize].total = orders[i].total_price;
             countSize++;
         }
     }
-
     double min = (countSize > 0) ? sales[0].total : 0;
     char worst_date[32] = "";
-    double worst_total = 0; //cantidad de ventas en la fecha de menor ventas
-    if (countSize > 0) {
+    if(countSize > 0)
         strcpy(worst_date, sales[0].date);
-        worst_total = sales[0].total;
-    }
-    for (int j = 0; j < countSize; j++) { //guarda la fecha con menos ventas
+    for (int j = 0; j < countSize; j++) {
         if (sales[j].total < min) {
             min = sales[j].total;
             strcpy(worst_date, sales[j].date);
-            worst_total = sales[j].total;
         }
     }
-
-    free(sales); //liberamos la memoria, para no tener perdidas de memoria
-    char *result = malloc(256); //reservamos memoria para el resultado
-    snprintf(result, 256, "%s: %.2f", worst_date, worst_total); //guardamos el resultado en el formato que describamos
+    free(sales);
+    char *result = malloc(256);
+    snprintf(result, 256, "%s: %.2f", worst_date, min);
     return result;
 }
 
-//dmsp: Fecha con más ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
+// dmsp: Fecha con mayor ventas en términos de cantidad de pizzas
 char *dmsp(int *size, Order *orders) {
     typedef struct {
         char date[32];
         int total;
-    } DateCount;
+    } DateQuantity;
     int capacity = 10, countSize = 0;
-    DateCount *counts = malloc(capacity * sizeof(DateCount));
+    DateQuantity *data = malloc(capacity * sizeof(DateQuantity));
 
     for (int i = 0; i < *size; i++) {
         int found = 0;
         for (int j = 0; j < countSize; j++) {
-            if (strcmp(counts[j].date, orders[i].order_date) == 0) {
-                counts[j].total += orders[i].quantity;
+            if (strcmp(data[j].date, orders[i].order_date) == 0) {
+                data[j].total += orders[i].quantity;
                 found = 1;
                 break;
             }
@@ -232,10 +225,10 @@ char *dmsp(int *size, Order *orders) {
         if (!found) {
             if (countSize >= capacity) {
                 capacity *= 2;
-                counts = realloc(counts, capacity * sizeof(DateCount));
+                data = realloc(data, capacity * sizeof(DateQuantity));
             }
-            strcpy(counts[countSize].date, orders[i].order_date);
-            counts[countSize].total = orders[i].quantity;
+            strcpy(data[countSize].date, orders[i].order_date);
+            data[countSize].total = orders[i].quantity;
             countSize++;
         }
     }
@@ -243,32 +236,32 @@ char *dmsp(int *size, Order *orders) {
     char best_date[32] = "";
     int best_total = 0;
     for (int j = 0; j < countSize; j++) {
-        if (counts[j].total > max) {
-            max = counts[j].total;
-            strcpy(best_date, counts[j].date);
-            best_total = counts[j].total;
+        if (data[j].total > max) {
+            max = data[j].total;
+            strcpy(best_date, data[j].date);
+            best_total = data[j].total;
         }
     }
-    free(counts);
+    free(data);
     char *result = malloc(256);
     snprintf(result, 256, "%s: %d", best_date, best_total);
     return result;
 }
 
-//dlsp: Fecha con menos ventas en términos de cantidad de pizzas (junto a la cantidad de pizzas)
+// dlsp: Fecha con menor ventas en términos de cantidad de pizzas
 char *dlsp(int *size, Order *orders) {
     typedef struct {
         char date[32];
         int total;
-    } DateCount;
+    } DateQuantity;
     int capacity = 10, countSize = 0;
-    DateCount *counts = malloc(capacity * sizeof(DateCount));
+    DateQuantity *data = malloc(capacity * sizeof(DateQuantity));
 
     for (int i = 0; i < *size; i++) {
         int found = 0;
         for (int j = 0; j < countSize; j++) {
-            if (strcmp(counts[j].date, orders[i].order_date) == 0) {
-                counts[j].total += orders[i].quantity;
+            if (strcmp(data[j].date, orders[i].order_date) == 0) {
+                data[j].total += orders[i].quantity;
                 found = 1;
                 break;
             }
@@ -276,97 +269,139 @@ char *dlsp(int *size, Order *orders) {
         if (!found) {
             if (countSize >= capacity) {
                 capacity *= 2;
-                counts = realloc(counts, capacity * sizeof(DateCount));
+                data = realloc(data, capacity * sizeof(DateQuantity));
             }
-            strcpy(counts[countSize].date, orders[i].order_date);
-            counts[countSize].total = orders[i].quantity;
+            strcpy(data[countSize].date, orders[i].order_date);
+            data[countSize].total = orders[i].quantity;
             countSize++;
         }
     }
-    int min = (countSize > 0) ? counts[0].total : 0;
+    int min = (countSize > 0) ? data[0].total : 0;
     char worst_date[32] = "";
-    int worst_total = 0;
-    if (countSize > 0) {
-        strcpy(worst_date, counts[0].date);
-        worst_total = counts[0].total;
-    }
+    if(countSize > 0)
+        strcpy(worst_date, data[0].date);
     for (int j = 0; j < countSize; j++) {
-        if (counts[j].total < min) {
-            min = counts[j].total;
-            strcpy(worst_date, counts[j].date);
-            worst_total = counts[j].total;
+        if (data[j].total < min) {
+            min = data[j].total;
+            strcpy(worst_date, data[j].date);
         }
     }
-    free(counts);
+    free(data);
     char *result = malloc(256);
-    snprintf(result, 256, "%s: %d", worst_date, worst_total);
+    snprintf(result, 256, "%s: %d", worst_date, min);
     return result;
 }
 
-//apo: Promedio de pizzas por orden
-char *apo(int *size, Order *orders) { //char porque MetricFunc devuelve char
-    double total_pizzas = 0;
-    for (int i = 0; i < *size; i++) { //cant total de pizzas vendidas
-        total_pizzas += orders[i].quantity;
-    }
-
-    if (*size == 0) {
-        char *result = malloc(256);
-        snprintf(result, 256, "0.00");
-        return result; //devolvemos 0.00 si no hay ordenes, para evitar division por 0
-    }
-
-    double average = total_pizzas / (*size); //promedio de pizzas por orden
-    char *result = malloc(256);
-    snprintf(result, 256, "%.2f", average); //guardamos el resultado como char
-    return result; //devolvemos el resultado
-}
-
-//apd: Promedio de pizzas por día
-char *apd(int *size, Order *order) {
-    typedef struct {
-        char date[32];
-        int total_pizzas;
-    } DaySales;
-
-    int capacity = 10, countSize = 0;
-    DaySales *sales = malloc(capacity * sizeof(DaySales));
-
+// apo: Promedio de pizzas por orden (contando órdenes únicas)
+char *apo(int *size, Order *orders) {
+    int totalPizzas = 0, distinctOrders = 0;
+    int capacity = 10;
+    int *order_ids = malloc(capacity * sizeof(int));
     for (int i = 0; i < *size; i++) {
+        totalPizzas += orders[i].quantity;
         int found = 0;
-        for (int j = 0; j < countSize; j++) {
-            if (strcmp(sales[j].date, order[i].order_date) == 0) {
-                sales[j].total_pizzas += order[i].quantity;
+        for (int j = 0; j < distinctOrders; j++) {
+            if (order_ids[j] == orders[i].order_id) {
                 found = 1;
                 break;
             }
         }
         if (!found) {
-            if (countSize >= capacity) {
+            if (distinctOrders >= capacity) {
                 capacity *= 2;
-                sales = realloc(sales, capacity * sizeof(DaySales));
+                order_ids = realloc(order_ids, capacity * sizeof(int));
             }
-            strcpy(sales[countSize].date, order[i].order_date);
-            sales[countSize].total_pizzas = order[i].quantity;
-            countSize++;
+            order_ids[distinctOrders++] = orders[i].order_id;
         }
     }
-
-    double total_pizzas = 0;
-    double total_days = 0;
-    for (int i = 0; i < countSize; i++) {
-        total_pizzas += sales[i].total_pizzas;
-        total_days++;
-    }
-
-    double average_per_day;
-    if (total_days > 0) {
-        average_per_day = total_pizzas / total_days;
-    }
-    
+    double avg = (distinctOrders > 0) ? (double)totalPizzas / distinctOrders : 0.0;
+    free(order_ids);
     char *result = malloc(256);
-    snprintf(result, 256, "%.2f", average_per_day);
-    free(sales);
+    snprintf(result, 256, "%.2f", avg);
+    return result;
+}
+
+// apd: Promedio de pizzas por día (agrupando por fecha)
+char *apd(int *size, Order *orders) {
+    int totalPizzas = 0, distinctDays = 0;
+    int capacity = 10;
+    char **days = malloc(capacity * sizeof(char *));
+    for (int i = 0; i < *size; i++) {
+        totalPizzas += orders[i].quantity;
+        int found = 0;
+        for (int j = 0; j < distinctDays; j++) {
+            if (strcmp(days[j], orders[i].order_date) == 0) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            if (distinctDays >= capacity) {
+                capacity *= 2;
+                days = realloc(days, capacity * sizeof(char *));
+            }
+            days[distinctDays] = strdup(orders[i].order_date);
+            distinctDays++;
+        }
+    }
+    double avg = (distinctDays > 0) ? (double)totalPizzas / distinctDays : 0.0;
+    for (int i = 0; i < distinctDays; i++)
+        free(days[i]);
+    free(days);
+    char *result = malloc(256);
+    snprintf(result, 256, "%.2f", avg);
+    return result;
+}
+
+// ims: Ingrediente más vendido
+char *ims(int *size, Order *orders) {
+    typedef struct {
+        char name[128];
+        int count;
+    } IngredientCount;
+    int capacity = 10, countSize = 0;
+    IngredientCount *ingredients = malloc(capacity * sizeof(IngredientCount));
+
+    for (int i = 0; i < *size; i++) {
+        char temp[256];
+        strcpy(temp, orders[i].pizza_ingredients);
+        char *token = strtok(temp, ",");
+        while (token != NULL) {
+            // Eliminar espacios iniciales
+            while (isspace((unsigned char)*token)) token++;
+            char ing[128];
+            strcpy(ing, token);
+            int found = 0;
+            for (int j = 0; j < countSize; j++) {
+                if (strcmp(ingredients[j].name, ing) == 0) {
+                    ingredients[j].count += orders[i].quantity;
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found) {
+                if (countSize >= capacity) {
+                    capacity *= 2;
+                    ingredients = realloc(ingredients, capacity * sizeof(IngredientCount));
+                }
+                strcpy(ingredients[countSize].name, ing);
+                ingredients[countSize].count = orders[i].quantity;
+                countSize++;
+            }
+            token = strtok(NULL, ",");
+        }
+    }
+    int max = -1;
+    char best_ing[128] = "";
+    for (int j = 0; j < countSize; j++) {
+        if (ingredients[j].count > max) {
+            max = ingredients[j].count;
+            strcpy(best_ing, ingredients[j].name);
+        }
+    }
+    free(ingredients);
+    char *result = malloc(256);
+    snprintf(result, 256, "%s", best_ing);
     return result;
 }
 
@@ -379,7 +414,7 @@ typedef struct {
     MetricFunc func;
 } MetricEntry;
 
-// Actualizamos el arreglo de métricas con las nuevas funciones
+// Actualizamos el arreglo de métricas para incluir la función ims
 MetricEntry metrics[] = {
     {"pms", "Pizza mas vendida", pms},
     {"pls", "Pizza menos vendida", pls},
@@ -388,17 +423,11 @@ MetricEntry metrics[] = {
     {"dmsp", "Fecha con mas ventas en terminos de cantidad de pizzas", dmsp},
     {"dlsp", "Fecha con menos ventas en terminos de cantidad de pizzas", dlsp},
     {"apo", "Promedio de pizzas por orden", apo},
-    {"apd", "Promedio de pizzas por dia", apd}
+    {"apd", "Promedio de pizzas por dia", apd},
+    {"ims", "Ingrediente mas vendido", ims}
 };
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
-
-
-/* Metricas que faltan: 
-    ims: Ingrediente más vendido
-    hp: Cantidad de pizzas por categoría vendidas
-    */
-
 
 /* ------------------- Función main ------------------- */
 int main(int argc, char *argv[]) {
@@ -439,7 +468,7 @@ int main(int argc, char *argv[]) {
             capacity *= 2;
             orders = realloc(orders, capacity * sizeof(Order));
         }
-        // Asignación de campos según el formato:
+        // Asignar campos según el formato:
         // 0: pizza_id, 1: order_id, 2: pizza_name_id, 3: quantity, 4: order_date,
         // 5: order_time, 6: unit_price, 7: total_price, 8: pizza_size,
         // 9: pizza_category, 10: pizza_ingredients, 11: pizza_name
