@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #define MAX_LINE 1024
-#define MAX_TOKENS 12  // Se asume que cada línea tiene 12 campos
+#define MAX_TOKENS 20  // Permitimos más tokens para manejar campos con comas
 
 // Definición de la estructura para cada venta (Order)
 typedef struct {
@@ -17,13 +17,38 @@ typedef struct {
     char pizza_name[128];
 } Order;
 
-// Función simple para parsear una línea CSV separándola en tokens por coma.
+// Función auxiliar para eliminar espacios al inicio y final de una cadena
+void trim(char *str) {
+    while (isspace((unsigned char)*str)) str++;
+    char *end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end)) end--;
+    *(end+1) = '\0';
+}
+
+// Parser simple para líneas CSV. Separa en tokens y respeta comillas.
 int parse_csv_line(char *line, char tokens[][256]) {
     int token_index = 0;
-    char *token = strtok(line, ",");
-    while (token != NULL && token_index < MAX_TOKENS) {
-        strcpy(tokens[token_index++], token);
-        token = strtok(NULL, ",");
+    int i = 0, len = strlen(line);
+    while (i < len && token_index < MAX_TOKENS) {
+        char field[256] = {0};
+        int field_index = 0;
+        if (line[i] == '"') {
+            i++; // saltar comilla inicial
+            while (i < len && line[i] != '"') {
+                field[field_index++] = line[i++];
+            }
+            field[field_index] = '\0';
+            i++; // saltar comilla de cierre
+            if (line[i] == ',') i++;
+        } else {
+            while (i < len && line[i] != ',') {
+                field[field_index++] = line[i++];
+            }
+            field[field_index] = '\0';
+            if (line[i] == ',') i++;
+        }
+        strcpy(tokens[token_index], field);
+        token_index++;
     }
     return token_index;
 }
@@ -102,7 +127,7 @@ char *pls(int *size, Order *orders) {
     }
     int min = (countSize > 0) ? counts[0].total : 0;
     char worst[128] = "";
-    if(countSize > 0)
+    if (countSize > 0)
         strcpy(worst, counts[0].name);
     for (int j = 0; j < countSize; j++) {
         if (counts[j].total < min) {
@@ -190,7 +215,7 @@ char *dls(int *size, Order *orders) {
     }
     double min = (countSize > 0) ? sales[0].total : 0;
     char worst_date[32] = "";
-    if(countSize > 0)
+    if (countSize > 0)
         strcpy(worst_date, sales[0].date);
     for (int j = 0; j < countSize; j++) {
         if (sales[j].total < min) {
@@ -278,7 +303,7 @@ char *dlsp(int *size, Order *orders) {
     }
     int min = (countSize > 0) ? data[0].total : 0;
     char worst_date[32] = "";
-    if(countSize > 0)
+    if (countSize > 0)
         strcpy(worst_date, data[0].date);
     for (int j = 0; j < countSize; j++) {
         if (data[j].total < min) {
@@ -367,7 +392,6 @@ char *ims(int *size, Order *orders) {
         strcpy(temp, orders[i].pizza_ingredients);
         char *token = strtok(temp, ",");
         while (token != NULL) {
-            // Eliminar espacios iniciales
             while (isspace((unsigned char)*token)) token++;
             char ing[128];
             strcpy(ing, token);
@@ -405,6 +429,47 @@ char *ims(int *size, Order *orders) {
     return result;
 }
 
+// hp: Cantidad de pizzas por categoría vendidas.
+char *hp(int *size, Order *orders) {
+    typedef struct {
+        char category[64];
+        int total;
+    } CatCount;
+    int capacity = 10, countSize = 0;
+    CatCount *cats = malloc(capacity * sizeof(CatCount));
+
+    for (int i = 0; i < *size; i++) {
+        int found = 0;
+        for (int j = 0; j < countSize; j++) {
+            if (strcmp(cats[j].category, orders[i].pizza_category) == 0) {
+                cats[j].total += orders[i].quantity;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            if (countSize >= capacity) {
+                capacity *= 2;
+                cats = realloc(cats, capacity * sizeof(CatCount));
+            }
+            strcpy(cats[countSize].category, orders[i].pizza_category);
+            cats[countSize].total = orders[i].quantity;
+            countSize++;
+        }
+    }
+    char *result = malloc(512);
+    result[0] = '\0';
+    for (int j = 0; j < countSize; j++) {
+        char buffer[128];
+        snprintf(buffer, 128, "%s: %d", cats[j].category, cats[j].total);
+        strcat(result, buffer);
+        if (j < countSize - 1)
+            strcat(result, ", ");
+    }
+    free(cats);
+    return result;
+}
+
 /* ------------------- Arreglo de punteros a funciones para las métricas ------------------- */
 typedef char* (*MetricFunc)(int *, Order *);
 
@@ -414,7 +479,7 @@ typedef struct {
     MetricFunc func;
 } MetricEntry;
 
-// Actualizamos el arreglo de métricas para incluir la función ims
+// Arreglo de métricas completo
 MetricEntry metrics[] = {
     {"pms", "Pizza mas vendida", pms},
     {"pls", "Pizza menos vendida", pls},
@@ -424,7 +489,8 @@ MetricEntry metrics[] = {
     {"dlsp", "Fecha con menos ventas en terminos de cantidad de pizzas", dlsp},
     {"apo", "Promedio de pizzas por orden", apo},
     {"apd", "Promedio de pizzas por dia", apd},
-    {"ims", "Ingrediente mas vendido", ims}
+    {"ims", "Ingrediente mas vendido", ims},
+    {"hp", "Cantidad de pizzas por categoria", hp}
 };
 
 int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
@@ -461,24 +527,37 @@ int main(int argc, char *argv[]) {
         if (strlen(line) == 0)
             continue;
         char tokens[MAX_TOKENS][256] = {{0}};
-        int token_count = parse_csv_line(line, tokens);
-        if (token_count < MAX_TOKENS)
+        int nTokens = parse_csv_line(line, tokens);
+        if (nTokens < 11)
             continue;
+
         if (num_orders >= capacity) {
             capacity *= 2;
             orders = realloc(orders, capacity * sizeof(Order));
         }
-        // Asignar campos según el formato:
-        // 0: pizza_id, 1: order_id, 2: pizza_name_id, 3: quantity, 4: order_date,
-        // 5: order_time, 6: unit_price, 7: total_price, 8: pizza_size,
-        // 9: pizza_category, 10: pizza_ingredients, 11: pizza_name
         orders[num_orders].order_id = atoi(tokens[1]);
         strcpy(orders[num_orders].order_date, tokens[4]);
         orders[num_orders].quantity = atoi(tokens[3]);
         orders[num_orders].total_price = atof(tokens[7]);
         strcpy(orders[num_orders].pizza_category, tokens[9]);
-        strcpy(orders[num_orders].pizza_ingredients, tokens[10]);
-        strcpy(orders[num_orders].pizza_name, tokens[11]);
+
+        // Reconstruir campos si hay más de 12 tokens
+        if (nTokens == 12) {
+            strcpy(orders[num_orders].pizza_ingredients, tokens[10]);
+            strcpy(orders[num_orders].pizza_name, tokens[11]);
+        } else if (nTokens > 12) {
+            char ingredients[256] = "";
+            for (int k = 10; k < nTokens - 1; k++) {
+                strcat(ingredients, tokens[k]);
+                if (k < nTokens - 2)
+                    strcat(ingredients, ", ");
+            }
+            strcpy(orders[num_orders].pizza_ingredients, ingredients);
+            strcpy(orders[num_orders].pizza_name, tokens[nTokens - 1]);
+        } else if (nTokens == 11) {
+            orders[num_orders].pizza_ingredients[0] = '\0';
+            strcpy(orders[num_orders].pizza_name, tokens[10]);
+        }
         num_orders++;
     }
     fclose(fp);
