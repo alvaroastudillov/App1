@@ -8,10 +8,15 @@
 
 // Definición de la estructura para cada venta (Order)
 typedef struct {
+    int pizza_id; //agregue
     int order_id;
-    char order_date[32];
+    char pizza_name_id[128]; //agregue
     int quantity;
-    double total_price;
+    char order_date[32]; // DD/MM/YYYY
+    //order_time inecesario
+    float unit_price; //agregue
+    float total_price;
+    char pizza_size[32]; //agregue (L, M , S)
     char pizza_category[64];
     char pizza_ingredients[256];
     char pizza_name[128];
@@ -29,23 +34,28 @@ void trim(char *str) {
 int parse_csv_line(char *line, char tokens[][256]) {
     int token_index = 0;
     int i = 0, len = strlen(line);
+
     while (i < len && token_index < MAX_TOKENS) {
         char field[256] = {0};
         int field_index = 0;
+
         if (line[i] == '"') {
             i++; // saltar comilla inicial
+
             while (i < len && line[i] != '"') {
                 field[field_index++] = line[i++];
             }
             field[field_index] = '\0';
             i++; // saltar comilla de cierre
             if (line[i] == ',') i++;
+
         } else {
             while (i < len && line[i] != ',') {
                 field[field_index++] = line[i++];
             }
             field[field_index] = '\0';
             if (line[i] == ',') i++;
+            
         }
         strcpy(tokens[token_index], field);
         token_index++;
