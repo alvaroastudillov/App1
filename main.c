@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     FILE *fp = fopen(argv[1], "r");
     if (fp == NULL) {
         perror("Error al abrir el archivo");
-        return 1;
+        return 1; 
     }
     
     char line[MAX_LINE];
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
             orders = realloc(orders, capacity * sizeof(Order));
             if (!orders) {
                 perror("Error al realocar memoria");
-                fclose(fp);
+                fclose(fp); //se preocupa de cerrar el archivo
                 return 1;
             }
         }

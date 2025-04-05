@@ -8,7 +8,6 @@
 #include <ctype.h>
 
 /* ------------------- Funciones de Métricas ------------------- */
-
 // pms: Pizza más vendida
 char *pms(int *size, Order *orders) {
     typedef struct {
