@@ -2,12 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
 #define MAX_LINE 1024
 #define MAX_TOKENS 20
 
-// Definición de la estructura para cada venta (Order)
-// (Esta definición debe coincidir con la de utils.c y metrics.c)
+// Declaración de la estructura Order (debe coincidir con la de utils.c)
 typedef struct {
     int pizza_id;
     int order_id;
@@ -22,47 +20,11 @@ typedef struct {
     char pizza_name[128];
 } Order;
 
-// Declaración de las funciones de utils (parse_csv_line y trim)
-void trim(char *str);
-int parse_csv_line(char *line, char tokens[][256]);
-
-// Declaración de las funciones de métricas
+// Incluir la cabecera de utils
+#include "utils.h"
+// Incluir la cabecera de metrics (si tienes uno)
 char *pms(int *size, Order *orders);
 char *pls(int *size, Order *orders);
-
-void trim(char *str) {
-    while (isspace((unsigned char)*str)) str++;
-    char *end = str + strlen(str) - 1;
-    while (end > str && isspace((unsigned char)*end)) end--;
-    *(end+1) = '\0';
-}
-
-int parse_csv_line(char *line, char tokens[][256]) {
-    int token_index = 0;
-    int i = 0, len = strlen(line);
-    while (i < len && token_index < MAX_TOKENS) {
-        char field[256] = {0};
-        int field_index = 0;
-        if (line[i] == '"') {
-            i++;
-            while (i < len && line[i] != '"') {
-                field[field_index++] = line[i++];
-            }
-            field[field_index] = '\0';
-            i++;
-            if (line[i] == ',') i++;
-        } else {
-            while (i < len && line[i] != ',') {
-                field[field_index++] = line[i++];
-            }
-            field[field_index] = '\0';
-            if (line[i] == ',') i++;
-        }
-        strcpy(tokens[token_index], field);
-        token_index++;
-    }
-    return token_index;
-}
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -77,7 +39,6 @@ int main(int argc, char *argv[]) {
     }
     
     char line[MAX_LINE];
-    // Leer y descartar la cabecera
     if (fgets(line, MAX_LINE, fp) == NULL) {
         fprintf(stderr, "Archivo vacío o error al leer\n");
         fclose(fp);
@@ -88,7 +49,6 @@ int main(int argc, char *argv[]) {
     int num_orders = 0;
     Order *orders = malloc(capacity * sizeof(Order));
     
-    // Procesar cada línea del CSV
     while (fgets(line, MAX_LINE, fp)) {
         line[strcspn(line, "\r\n")] = 0;
         if (strlen(line) == 0)
@@ -106,8 +66,6 @@ int main(int argc, char *argv[]) {
         orders[num_orders].quantity = atoi(tokens[3]);
         orders[num_orders].total_price = atof(tokens[7]);
         strcpy(orders[num_orders].pizza_category, tokens[9]);
-        
-        // Reconstruir los campos pizza_ingredients y pizza_name según el número de tokens
         if (nTokens == 12) {
             strcpy(orders[num_orders].pizza_ingredients, tokens[10]);
             strcpy(orders[num_orders].pizza_name, tokens[11]);
@@ -128,7 +86,6 @@ int main(int argc, char *argv[]) {
     }
     fclose(fp);
     
-    // Ejemplo: calcular y mostrar las métricas pms y pls
     char *resultado_pms = pms(&num_orders, orders);
     char *resultado_pls = pls(&num_orders, orders);
     printf("Pizza más vendida: %s\n", resultado_pms);
@@ -139,4 +96,3 @@ int main(int argc, char *argv[]) {
     free(orders);
     return 0;
 }
-
