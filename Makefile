@@ -3,10 +3,10 @@ CFLAGS = -Wall -Wextra -std=c99 -pedantic
 
 OBJS = main.o utils.o metrics.o
 
-all: app
+all: app1
 
-app: $(OBJS)
-	$(CC) $(CFLAGS) -o app $(OBJS)
+app1: $(OBJS)
+	$(CC) $(CFLAGS) -o app1 $(OBJS)
 
 main.o: main.c utils.h metrics.h
 	$(CC) $(CFLAGS) -c main.c
@@ -18,4 +18,4 @@ metrics.o: metrics.c utils.h metrics.h
 	$(CC) $(CFLAGS) -c metrics.c
 
 clean:
-	rm -f $(OBJS) app
+	rm -f $(OBJS) app1
