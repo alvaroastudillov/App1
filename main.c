@@ -1,34 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#define MAX_LINE 1024
-#define MAX_TOKENS 20
-
-// Declaración de la estructura Order (debe coincidir con la de utils.c)
-typedef struct {
-    int pizza_id;
-    int order_id;
-    char pizza_name_id[128];
-    int quantity;
-    char order_date[32];
-    float unit_price;
-    float total_price;
-    char pizza_size[32];
-    char pizza_category[64];
-    char pizza_ingredients[256];
-    char pizza_name[128];
-} Order;
-
-// Incluir la cabecera de utils
 #include "utils.h"
-// Incluir la cabecera de metrics (si tienes uno)
-char *pms(int *size, Order *orders);
-char *pls(int *size, Order *orders);
+#include "metrics.h"
+
+// Tipo de puntero a función para las métricas
+typedef char* (*MetricFunc)(int *, Order *);
+
+// Estructura que asocia el código de la métrica, su descripción y la función
+typedef struct {
+    char *code;
+    char *description;
+    MetricFunc func;
+} MetricEntry;
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Uso: %s archivo.csv\n", argv[0]);
+        fprintf(stderr, "Uso: %s archivo.csv [metrica0 metrica1 ...]\n", argv[0]);
         return 1;
     }
     
@@ -39,6 +27,7 @@ int main(int argc, char *argv[]) {
     }
     
     char line[MAX_LINE];
+    // Leer y descartar la cabecera
     if (fgets(line, MAX_LINE, fp) == NULL) {
         fprintf(stderr, "Archivo vacío o error al leer\n");
         fclose(fp);
@@ -48,7 +37,13 @@ int main(int argc, char *argv[]) {
     int capacity = 100;
     int num_orders = 0;
     Order *orders = malloc(capacity * sizeof(Order));
+    if (!orders) {
+        perror("Error al asignar memoria");
+        fclose(fp);
+        return 1;
+    }
     
+    // Procesar cada línea del CSV
     while (fgets(line, MAX_LINE, fp)) {
         line[strcspn(line, "\r\n")] = 0;
         if (strlen(line) == 0)
@@ -60,6 +55,11 @@ int main(int argc, char *argv[]) {
         if (num_orders >= capacity) {
             capacity *= 2;
             orders = realloc(orders, capacity * sizeof(Order));
+            if (!orders) {
+                perror("Error al realocar memoria");
+                fclose(fp);
+                return 1;
+            }
         }
         orders[num_orders].order_id = atoi(tokens[1]);
         strcpy(orders[num_orders].order_date, tokens[4]);
@@ -86,12 +86,40 @@ int main(int argc, char *argv[]) {
     }
     fclose(fp);
     
-    char *resultado_pms = pms(&num_orders, orders);
-    char *resultado_pls = pls(&num_orders, orders);
-    printf("Pizza más vendida: %s\n", resultado_pms);
-    printf("Pizza menos vendida: %s\n", resultado_pls);
-    free(resultado_pms);
-    free(resultado_pls);
+    // Definir el arreglo de métricas
+    MetricEntry metrics[] = {
+        {"pms", "Pizza más vendida", pms},
+        {"pls", "Pizza menos vendida", pls},
+        {"dms", "Fecha con mayor ventas en dinero", dms},
+        {"dls", "Fecha con menor ventas en dinero", dls},
+        {"dmsp", "Fecha con mayor ventas en cantidad de pizzas", dmsp},
+        {"dlsp", "Fecha con menor ventas en cantidad de pizzas", dlsp},
+        {"apo", "Promedio de pizzas por orden", apo},
+        {"apd", "Promedio de pizzas por día", apd},
+        {"ims", "Ingrediente más vendido", ims},
+        {"hp", "Cantidad de pizzas por categoría", hp}
+    };
+    int num_metrics = sizeof(metrics) / sizeof(metrics[0]);
+    
+    // Procesar los argumentos para ejecutar las métricas
+    if (argc > 2) {
+        for (int i = 2; i < argc; i++) {
+            int found = 0;
+            for (int j = 0; j < num_metrics; j++) {
+                if (strcmp(argv[i], metrics[j].code) == 0) {
+                    char *res = metrics[j].func(&num_orders, orders);
+                    printf("%s: %s\n", metrics[j].description, res);
+                    free(res);
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found)
+                printf("Métrica desconocida: %s\n", argv[i]);
+        }
+    } else {
+        printf("No se especificaron métricas. Se cargaron %d órdenes.\n", num_orders);
+    }
     
     free(orders);
     return 0;

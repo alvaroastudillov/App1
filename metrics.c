@@ -1,22 +1,11 @@
-#include <stdio.h>
+// Habilitamos funciones POSIX (incluida strdup) ya que strdup no forma parte de C99.
+#define _POSIX_C_SOURCE 200809L
+
+#include "metrics.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-
-// Debe coincidir con la definición de Order en utils.c y main.c
-typedef struct {
-    int pizza_id;
-    int order_id;
-    char pizza_name_id[128];
-    int quantity;
-    char order_date[32];
-    float unit_price;
-    float total_price;
-    char pizza_size[32];
-    char pizza_category[64];
-    char pizza_ingredients[256];
-    char pizza_name[128];
-} Order;
 
 /* ------------------- Funciones de Métricas ------------------- */
 

@@ -8,13 +8,13 @@ all: app
 app: $(OBJS)
 	$(CC) $(CFLAGS) -o app $(OBJS)
 
-main.o: main.c
+main.o: main.c utils.h metrics.h
 	$(CC) $(CFLAGS) -c main.c
 
-utils.o: utils.c
+utils.o: utils.c utils.h
 	$(CC) $(CFLAGS) -c utils.c
 
-metrics.o: metrics.c
+metrics.o: metrics.c utils.h metrics.h
 	$(CC) $(CFLAGS) -c metrics.c
 
 clean:
